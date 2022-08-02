@@ -39,3 +39,20 @@ export const logout = async () => {
 
 	removeStorageItem(storageAccessKey);
 };
+
+export const refreshToken = async () => {
+	const {
+		auth: { refresh },
+	} = API_URL;
+
+	const { headers } = await requester({
+		method: POST,
+		url: refresh,
+	});
+
+	const newBetreeAccessToken = headers.authorization.split(' ')[1];
+
+	setStorageItem(storageAccessKey, newBetreeAccessToken);
+
+	return newBetreeAccessToken;
+};

@@ -5,6 +5,7 @@ export const POST = 'POST';
 
 export const RESPONSE_SUCCESS_OK = 200;
 export const RESPONSE_SUCCESS_CREATED = 201;
+export const RESPONSE_ERROR_UNAUTHORIZED = 401;
 
 const API_URL = {
 	auth: {

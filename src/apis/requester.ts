@@ -1,5 +1,7 @@
-import { getStorageItem, storageAccessKey } from '@/utils/local-storage';
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import { RESPONSE_ERROR_UNAUTHORIZED } from '@/constants/api';
+import { getStorageItem, storageAccessKey } from '@/utils/local-storage';
+import { refreshToken } from './auth';
 
 const createAxiosInstance = () => {
 	const base = axios.create({
@@ -11,8 +13,12 @@ const createAxiosInstance = () => {
 		async (response) => {
 			const { config, data } = response;
 
-			if (data?.statusCode >= 400 && data?.statusCode < 500) {
-				// 토큰 재발급
+			if (data?.statusCode === RESPONSE_ERROR_UNAUTHORIZED) {
+				const newAccessToken = await refreshToken();
+
+				if (config.headers) {
+					config.headers['Authorization'] = `Bearer ${newAccessToken}`;
+				}
 
 				return axios(config);
 			}
@@ -25,8 +31,12 @@ const createAxiosInstance = () => {
 				response: { status },
 			} = error;
 
-			if (status >= 400 && status < 500) {
-				// 토큰 재발급
+			if (status === RESPONSE_ERROR_UNAUTHORIZED) {
+				const newAccessToken = await refreshToken();
+
+				if (config.headers) {
+					config.headers['Authorization'] = `Bearer ${newAccessToken}`;
+				}
 
 				return axios(config);
 			}
@@ -43,18 +53,12 @@ const axiosInstance = createAxiosInstance();
 export async function requester<Payload>(option: AxiosRequestConfig) {
 	const accessToken = getStorageItem(storageAccessKey);
 
-	const response: AxiosResponse<Payload> = await axiosInstance(
-		accessToken
-			? {
-					headers: {
-						Authorization: `Bearer ${accessToken}`,
-					},
-					...option,
-			  }
-			: {
-					...option,
-			  },
-	);
+	const response: AxiosResponse<Payload> = await axiosInstance({
+		headers: {
+			Authorization: accessToken ? `Bearer ${accessToken}` : '',
+		},
+		...option,
+	});
 
 	return {
 		status: response.status,
